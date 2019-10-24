@@ -14,6 +14,19 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifdef _MSC_VER
+// blanket turn off warnings from CppCoreCheck from catch
+// so people aren't annoyed by them when running the tool.
+#pragma warning(disable : 26440 26426) // from catch 
+#pragma warning(disable : 4996) // multi_span is in the process of being deprecated. 
+                                // Suppressing warnings until it is completely removed
+#endif
+
+#if __clang__ || __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <catch/catch.hpp> // for AssertionHandler, StringRef, CHECK, CHECK...
 
 #include <gsl/gsl_byte>   // for byte
@@ -29,9 +42,10 @@
 #include <string>    // for string
 #include <vector>    // for vector
 
-namespace gsl {
+namespace gsl
+{
 struct fail_fast;
-}  // namespace gsl
+} // namespace gsl
 
 using namespace std;
 using namespace gsl;
@@ -44,8 +58,9 @@ struct BaseClass
 struct DerivedClass : BaseClass
 {
 };
-}
+} // namespace
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("default_constructor")
 {
     {
@@ -80,6 +95,7 @@ TEST_CASE("default_constructor")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("from_nullptr_constructor")
 {
     {
@@ -122,8 +138,8 @@ TEST_CASE("from_nullptr_constructor")
     }
 }
 
-TEST_CASE("from_nullptr_length_constructor")
-{
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+TEST_CASE("from_nullptr_length_constructor") {
     {
         multi_span<int> s{nullptr, 0};
         CHECK((s.length() == 0 && s.data() == nullptr));
@@ -141,25 +157,18 @@ TEST_CASE("from_nullptr_length_constructor")
     }
 
     {
-#ifdef CONFIRM_COMPILATION_ERRORS
-        multi_span<int, 1> s{nullptr, 0};
-        CHECK((s.length() == 1 && s.data() == nullptr)); // explains why it can't compile
-#endif
-    }
-
-    {
-        auto workaround_macro = []() { multi_span<int> s{nullptr, 1}; };
+        auto workaround_macro = []() { const multi_span<int> s{nullptr, 1}; };
         CHECK_THROWS_AS(workaround_macro(), fail_fast);
 
-        auto const_workaround_macro = []() { multi_span<const int> cs{nullptr, 1}; };
+        auto const_workaround_macro = []() { const multi_span<const int> cs{nullptr, 1}; };
         CHECK_THROWS_AS(const_workaround_macro(), fail_fast);
     }
 
     {
-        auto workaround_macro = []() { multi_span<int, 0> s{nullptr, 1}; };
+        auto workaround_macro = []() { const multi_span<int, 0> s{nullptr, 1}; };
         CHECK_THROWS_AS(workaround_macro(), fail_fast);
 
-        auto const_workaround_macro = []() { multi_span<const int, 0> s{nullptr, 1}; };
+        auto const_workaround_macro = []() { const multi_span<const int, 0> s{nullptr, 1}; };
         CHECK_THROWS_AS(const_workaround_macro(), fail_fast);
     }
 
@@ -170,8 +179,16 @@ TEST_CASE("from_nullptr_length_constructor")
         multi_span<const int*> cs{nullptr, 0};
         CHECK((cs.length() == 0 && cs.data() == nullptr));
     }
+
+    {
+#ifdef CONFIRM_COMPILATION_ERRORS
+        multi_span<int, 1> s{nullptr, 0};
+        CHECK((s.length() == 1 && s.data() == nullptr)); // explains why it can't compile
+#endif
+    }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("from_element_constructor")
 {
     int i = 5;
@@ -222,6 +239,7 @@ TEST_CASE("from_element_constructor")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("from_pointer_length_constructor")
 {
     int arr[4] = {1, 2, 3, 4};
@@ -246,11 +264,12 @@ TEST_CASE("from_pointer_length_constructor")
 
     {
         int* p = nullptr;
-        auto workaround_macro = [=]() { multi_span<int> s{p, 2}; };
+        auto workaround_macro = [=]() { const multi_span<int> s{p, 2}; };
         CHECK_THROWS_AS(workaround_macro(), fail_fast);
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("from_pointer_pointer_constructor")
 {
     int arr[4] = {1, 2, 3, 4};
@@ -278,29 +297,31 @@ TEST_CASE("from_pointer_pointer_constructor")
     }
 
     {
-        auto workaround_macro = [&]() { multi_span<int> s{&arr[1], &arr[0]}; };
+        auto workaround_macro = [&]() { const multi_span<int> s{&arr[1], &arr[0]}; };
         CHECK_THROWS_AS(workaround_macro(), fail_fast);
     }
 
     {
         int* p = nullptr;
-        auto workaround_macro = [&]() { multi_span<int> s{&arr[0], p}; };
+        auto workaround_macro = [&]() { const multi_span<int> s{&arr[0], p}; };
         CHECK_THROWS_AS(workaround_macro(), fail_fast);
     }
 
     {
         int* p = nullptr;
-        auto workaround_macro = [&]() { multi_span<int> s{p, p}; };
+        auto workaround_macro = [&]() { const multi_span<int> s{p, p}; };
         CHECK_THROWS_AS(workaround_macro(), fail_fast);
     }
 
     {
         int* p = nullptr;
-        auto workaround_macro = [&]() { multi_span<int> s{&arr[0], p}; };
+        auto workaround_macro = [&]() { const multi_span<int> s{&arr[0], p}; };
         CHECK_THROWS_AS(workaround_macro(), fail_fast);
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.3) // NO-FORMAT: attribute
 TEST_CASE("from_array_constructor")
 {
     int arr[5] = {1, 2, 3, 4, 5};
@@ -425,6 +446,11 @@ TEST_CASE("from_array_constructor")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.1) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(i.11) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.11)  // NO-FORMAT: attribute
 TEST_CASE("from_dynamic_array_constructor")
 {
     double(*arr)[3][4] = new double[100][3][4];
@@ -453,6 +479,7 @@ TEST_CASE("from_dynamic_array_constructor")
     delete[] arr;
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: Attribute
 TEST_CASE("from_std_array_constructor")
 {
     std::array<int, 4> arr = {1, 2, 3, 4};
@@ -512,6 +539,7 @@ TEST_CASE("from_std_array_constructor")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("from_const_std_array_constructor")
 {
     const std::array<int, 4> arr = {1, 2, 3, 4};
@@ -559,6 +587,7 @@ TEST_CASE("from_const_std_array_constructor")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("from_container_constructor")
 {
     std::vector<int> v = {1, 2, 3};
@@ -589,8 +618,7 @@ TEST_CASE("from_container_constructor")
         multi_span<char> s{cstr};
 #endif
         multi_span<const char> cs{cstr};
-        CHECK((cs.size() == narrow_cast<std::ptrdiff_t>(cstr.size()) &&
-               cs.data() == cstr.data()));
+        CHECK((cs.size() == narrow_cast<std::ptrdiff_t>(cstr.size()) && cs.data() == cstr.data()));
     }
 
     {
@@ -633,6 +661,8 @@ TEST_CASE("from_container_constructor")
     }
 }
 
+GSL_SUPPRESS(f.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("from_convertible_span_constructor")
 {
 #ifdef CONFIRM_COMPILATION_ERRORS
@@ -660,6 +690,7 @@ TEST_CASE("from_convertible_span_constructor")
     (void) avcd;
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("copy_move_and_assignment")
 {
     multi_span<int> s1;
@@ -688,6 +719,8 @@ void fn(const Bounds&)
 {
     static_assert(Bounds::static_size == 60, "static bounds is wrong size");
 }
+
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("as_multi_span_reshape")
 {
     int a[3][4][5];
@@ -706,11 +739,10 @@ TEST_CASE("as_multi_span_reshape")
     auto av8 = as_multi_span<int>(av7);
 
     CHECK(av8.size() == av6.size());
-    for (auto i = 0; i < av8.size(); i++) {
-        CHECK(av8[i] == 1);
-    }
+    for (auto i = 0; i < av8.size(); i++) { CHECK(av8[i] == 1); }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("first")
 {
     int arr[5] = {1, 2, 3, 4, 5};
@@ -754,6 +786,7 @@ TEST_CASE("first")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("last")
 {
     int arr[5] = {1, 2, 3, 4, 5};
@@ -796,6 +829,7 @@ TEST_CASE("last")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("subspan")
 {
     int arr[5] = {1, 2, 3, 4, 5};
@@ -869,6 +903,7 @@ TEST_CASE("subspan")
     }
 }
 
+GSL_SUPPRESS(con.4)  // NO-FORMAT: attribute
 TEST_CASE("rank")
 {
     int arr[2] = {1, 2};
@@ -890,6 +925,7 @@ TEST_CASE("rank")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("extent")
 {
     {
@@ -962,6 +998,7 @@ TEST_CASE("operator_function_call")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("comparison_operators")
 {
     {
@@ -1074,17 +1111,20 @@ TEST_CASE("comparison_operators")
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(i.11) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.11) // NO-FORMAT: attribute
 TEST_CASE("basics")
 {
     auto ptr = as_multi_span(new int[10], 10);
     fill(ptr.begin(), ptr.end(), 99);
-    for (int num : ptr) {
-        CHECK(num == 99);
-    }
+    for (int num : ptr) { CHECK(num == 99); }
 
     delete[] ptr.data();
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.4) // NO-FORMAT: attribute
 TEST_CASE("bounds_checks")
 {
     int arr[10][2];
@@ -1111,25 +1151,24 @@ TEST_CASE("bounds_checks")
 
 void overloaded_func(multi_span<const int, dynamic_range, 3, 5> exp, int expected_value)
 {
-    for (auto val : exp) {
-        CHECK(val == expected_value);
-    }
+    for (auto val : exp) { CHECK(val == expected_value); }
 }
 
 void overloaded_func(multi_span<const char, dynamic_range, 3, 5> exp, char expected_value)
 {
-    for (auto val : exp) {
-        CHECK(val == expected_value);
-    }
+    for (auto val : exp) { CHECK(val == expected_value); }
 }
 
 void fixed_func(multi_span<int, 3, 3, 5> exp, int expected_value)
 {
-    for (auto val : exp) {
-        CHECK(val == expected_value);
-    }
+    for (auto val : exp) { CHECK(val == expected_value); }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.11) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.3) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.5) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.5) // NO-FORMAT: attribute
 TEST_CASE("span_parameter_test")
 {
     auto data = new int[4][3][5];
@@ -1151,12 +1190,16 @@ TEST_CASE("span_parameter_test")
     delete[] data;
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.4)  // NO-FORMAT: attribute // false positive, checker does not recognize multi_span yet
+GSL_SUPPRESS(r.11) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.3) // NO-FORMAT: attribute
 TEST_CASE("md_access")
 {
     auto width = 5, height = 20;
 
     auto imgSize = width * height;
-    auto image_ptr = new int[static_cast<std::size_t>(imgSize)][3];
+    auto image_ptr = new int[narrow_cast<std::size_t>(imgSize)][3];
 
     // size check will be done
     auto image_view =
@@ -1165,8 +1208,10 @@ TEST_CASE("md_access")
     iota(image_view.begin(), image_view.end(), 1);
 
     int expected = 0;
-    for (auto i = 0; i < height; i++) {
-        for (auto j = 0; j < width; j++) {
+    for (auto i = 0; i < height; i++)
+    {
+        for (auto j = 0; j < width; j++)
+        {
             CHECK(expected + 1 == image_view[i][j][0]);
             CHECK(expected + 2 == image_view[i][j][1]);
             CHECK(expected + 3 == image_view[i][j][2]);
@@ -1181,8 +1226,15 @@ TEST_CASE("md_access")
             expected += 3;
         }
     }
+
+    delete[] image_ptr;
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.3) // NO-FORMAT: attribute
+GSL_SUPPRESS(i.11) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.11) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.3) // NO-FORMAT: attribute
 TEST_CASE("as_multi_span")
 {
     {
@@ -1201,6 +1253,7 @@ TEST_CASE("as_multi_span")
 
         string str = "ttttttttttttttt"; // size = 15
         auto t = str.data();
+        GSL_SUPPRESS(type.4) // NO-FORMAT: attribute // TODO: false positive
         (void) t;
         auto av3 = as_multi_span(str);
         overloaded_func(as_multi_span(av3, dim(1), dim<3>(), dim<5>()), 't');
@@ -1232,12 +1285,13 @@ TEST_CASE("as_multi_span")
         auto dv = as_multi_span(vec);
         (void) dv;
 
-#ifdef CONFIRM_COMPILATION_ERRORS
+    #ifdef CONFIRM_COMPILATION_ERRORS
         auto dv2 = as_multi_span(std::move(vec));
-#endif
+    #endif
     }
 }
 
+GSL_SUPPRESS(bounds.4) // NO-FORMAT: attribute
 TEST_CASE("empty_spans")
 {
     {
@@ -1247,7 +1301,8 @@ TEST_CASE("empty_spans")
         CHECK_THROWS_AS(empty_av[0], fail_fast);
         CHECK_THROWS_AS(empty_av.begin()[0], fail_fast);
         CHECK_THROWS_AS(empty_av.cbegin()[0], fail_fast);
-        for (auto& v : empty_av) {
+        for (auto& v : empty_av)
+        {
             (void) v;
             CHECK(false);
         }
@@ -1259,17 +1314,25 @@ TEST_CASE("empty_spans")
         CHECK_THROWS_AS(empty_av[0], fail_fast);
         CHECK_THROWS_AS(empty_av.begin()[0], fail_fast);
         CHECK_THROWS_AS(empty_av.cbegin()[0], fail_fast);
-        for (auto& v : empty_av) {
+        for (auto& v : empty_av)
+        {
             (void) v;
             CHECK(false);
         }
     }
 }
 
+GSL_SUPPRESS(con.4)    // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.1) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(r.3)      // NO-FORMAT: attribute
+GSL_SUPPRESS(r.5)      // NO-FORMAT: attribute
+GSL_SUPPRESS(r.11)     // NO-FORMAT: attribute
 TEST_CASE("index_constructor")
 {
     auto arr = new int[8];
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i)
+    {
         arr[2 * i] = 4 + i;
         arr[2 * i + 1] = i;
     }
@@ -1291,6 +1354,7 @@ TEST_CASE("index_constructor")
     delete[] arr;
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("index_constructors")
 {
     {
@@ -1352,17 +1416,18 @@ TEST_CASE("index_constructors")
         CHECK(i9[0] == 0);
     }
 
-    #ifdef CONFIRM_COMPILATION_ERRORS
+#ifdef CONFIRM_COMPILATION_ERRORS
     {
-    multi_span_index<3> i1(0, 1);
-    multi_span_index<3> i2(0, 1, 2, 3);
-    multi_span_index<3> i3 = {0};
-    multi_span_index<3> i4 = {0, 1, 2, 3};
-    multi_span_index<1> i5 = {0, 1};
+        multi_span_index<3> i1(0, 1);
+        multi_span_index<3> i2(0, 1, 2, 3);
+        multi_span_index<3> i3 = {0};
+        multi_span_index<3> i4 = {0, 1, 2, 3};
+        multi_span_index<1> i5 = {0, 1};
     }
-    #endif
+#endif
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("index_operations")
 {
     ptrdiff_t a[3] = {0, 1, 2};
@@ -1418,6 +1483,8 @@ TEST_CASE("index_operations")
     }
 }
 
+GSL_SUPPRESS(bounds.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 void iterate_second_column(multi_span<int, dynamic_range, dynamic_range> av)
 {
     auto length = av.size() / 2;
@@ -1426,33 +1493,33 @@ void iterate_second_column(multi_span<int, dynamic_range, dynamic_range> av)
     auto section = av.section({0, 1}, {length, 1});
 
     CHECK(section.size() == length);
-    for (auto i = 0; i < section.size(); ++i) {
-        CHECK(section[i][0] == av[i][1]);
-    }
+    for (auto i = 0; i < section.size(); ++i) { CHECK(section[i][0] == av[i][1]); }
 
-    for (auto i = 0; i < section.size(); ++i) {
+    for (auto i = 0; i < section.size(); ++i)
+    {
         auto idx = multi_span_index<2>{i, 0}; // avoid braces inside the CHECK macro
         CHECK(section[idx] == av[i][1]);
     }
 
     CHECK(section.bounds().index_bounds()[0] == length);
     CHECK(section.bounds().index_bounds()[1] == 1);
-    for (auto i = 0; i < section.bounds().index_bounds()[0]; ++i) {
-        for (auto j = 0; j < section.bounds().index_bounds()[1]; ++j) {
+    for (auto i = 0; i < section.bounds().index_bounds()[0]; ++i)
+    {
+        for (auto j = 0; j < section.bounds().index_bounds()[1]; ++j)
+        {
             auto idx = multi_span_index<2>{i, j}; // avoid braces inside the CHECK macro
             CHECK(section[idx] == av[i][1]);
         }
     }
 
     auto check_sum = 0;
-    for (auto i = 0; i < length; ++i) {
-        check_sum += av[i][1];
-    }
+    for (auto i = 0; i < length; ++i) { check_sum += av[i][1]; }
 
     {
         auto idx = 0;
         auto sum = 0;
-        for (auto num : section) {
+        for (auto num : section)
+        {
             CHECK(num == av[idx][1]);
             sum += num;
             idx++;
@@ -1463,7 +1530,8 @@ void iterate_second_column(multi_span<int, dynamic_range, dynamic_range> av)
     {
         auto idx = length - 1;
         auto sum = 0;
-        for (auto iter = section.rbegin(); iter != section.rend(); ++iter) {
+        for (auto iter = section.rbegin(); iter != section.rend(); ++iter)
+        {
             CHECK(*iter == av[idx][1]);
             sum += *iter;
             idx--;
@@ -1473,6 +1541,7 @@ void iterate_second_column(multi_span<int, dynamic_range, dynamic_range> av)
     }
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("span_section_iteration")
 {
     int arr[4][2] = {{4, 0}, {5, 1}, {6, 2}, {7, 3}};
@@ -1499,15 +1568,18 @@ TEST_CASE("span_section_iteration")
     }
 }
 
+GSL_SUPPRESS(con.4)     // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.1)  // NO-FORMAT: attribute
+GSL_SUPPRESS(r.3)       // NO-FORMAT: attribute
+GSL_SUPPRESS(r.5)       // NO-FORMAT: attribute
+GSL_SUPPRESS(r.11)      // NO-FORMAT: attribute
 TEST_CASE("dynamic_span_section_iteration")
 {
     auto height = 4, width = 2;
     auto size = height * width;
 
-    auto arr = new int[static_cast<std::size_t>(size)];
-    for (auto i = 0; i < size; ++i) {
-        arr[i] = i;
-    }
+    auto arr = new int[narrow_cast<std::size_t>(size)];
+    for (auto i = 0; i < size; ++i) { arr[i] = i; }
 
     auto av = as_multi_span(arr, size);
 
@@ -1531,6 +1603,10 @@ TEST_CASE("dynamic_span_section_iteration")
     delete[] arr;
 }
 
+GSL_SUPPRESS(bounds.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(con.4)    // NO-FORMAT: attribute
+GSL_SUPPRESS(r.11)     // NO-FORMAT: attribute
+GSL_SUPPRESS(i.11)     // NO-FORMAT: attribute
 TEST_CASE("span_structure_size")
 {
     double(*arr)[3][4] = new double[100][3][4];
@@ -1548,8 +1624,11 @@ TEST_CASE("span_structure_size")
     multi_span<const double, dynamic_range, 6, 4> av2 =
         as_multi_span(av1, dim(5), dim<6>(), dim<4>());
     (void) av2;
+
+    delete[] arr;
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("fixed_size_conversions")
 {
     int arr[] = {1, 2, 3, 4};
@@ -1631,7 +1710,7 @@ TEST_CASE("fixed_size_conversions")
 #endif
     {
         auto f = [&]() {
-            multi_span<int, 4> av9 = {arr2, 2};
+            const multi_span<int, 4> av9 = {arr2, 2};
             (void) av9;
         };
         CHECK_THROWS_AS(f(), fail_fast);
@@ -1640,12 +1719,13 @@ TEST_CASE("fixed_size_conversions")
     // this should fail - we are trying to assign a small dynamic a_v to a fixed_size larger one
     multi_span<int, dynamic_range> av = arr2;
     auto f = [&]() {
-        multi_span<int, 4> av2 = av;
+        const multi_span<int, 4> av2 = av;
         (void) av2;
     };
     CHECK_THROWS_AS(f(), fail_fast);
 }
 
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("as_writeable_bytes")
 {
     int a[] = {1, 2, 3, 4};
@@ -1674,6 +1754,10 @@ TEST_CASE("as_writeable_bytes")
     }
 }
 
+
+GSL_SUPPRESS(bounds.2) // NO-FORMAT: attribute
+GSL_SUPPRESS(bounds.4) // NO-FORMAT: attribute
+GSL_SUPPRESS(con.4) // NO-FORMAT: attribute
 TEST_CASE("iterator")
 {
     int a[] = {1, 2, 3, 4};
@@ -1682,8 +1766,14 @@ TEST_CASE("iterator")
         multi_span<int, dynamic_range> av = a;
         auto wav = as_writeable_bytes(av);
         for (auto& b : wav) {
+#if defined(__cplusplus) && (__cplusplus >= 201703L)
+            b = byte{0};
+#else
+            GSL_SUPPRESS(es.49)
             b = byte(0);
+#endif
         }
+
         for (std::size_t i = 0; i < 4; ++i) {
             CHECK(a[i] == 0);
         }
@@ -1699,3 +1789,11 @@ TEST_CASE("iterator")
         }
     }
 }
+
+#ifdef CONFIRM_COMPILATION_ERRORS
+copy(src_span_static, dst_span_static);
+#endif
+
+#if __clang__ || __GNUC__
+#pragma GCC diagnostic pop
+#endif
